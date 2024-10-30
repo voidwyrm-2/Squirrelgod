@@ -29,6 +29,9 @@ func sgInit() error {
 	return nil
 }
 
+func sgExit() {
+}
+
 func main() {
 	fmt.Println("===INIT===")
 	err := sgInit()
@@ -36,6 +39,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
+	defer sgExit()
 
 	// Create a new Discord session using the provided bot token.
 	fmt.Println("creating Discord session...")
