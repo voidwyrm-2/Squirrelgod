@@ -28,12 +28,16 @@ var sqHelp = func(_ *discordgo.Session, reply func(msg string), _ []string) erro
 }
 
 var commands = map[string]sqCommand{
-	"source": newSQCommand("Replies with the link to the source repo", func(s *discordgo.Session, reply func(msg string), _ []string) error {
+	"source": newSQCommand("Replies with the link to the source repo", func(_ *discordgo.Session, reply func(msg string), _ []string) error {
 		if sourceLink != "" {
 			reply("<" + sourceLink + ">")
 		} else {
 			reply("no source repo link was given")
 		}
+		return nil
+	}),
+	"echo": newSQCommand("A simple response test", func(s *discordgo.Session, reply func(msg string), args []string) error {
+		reply(strings.Join(args, " "))
 		return nil
 	}),
 }
