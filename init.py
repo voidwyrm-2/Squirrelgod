@@ -22,11 +22,13 @@ print(f"creating '{config}'...")
 with open(config, "wt" if config.exists() else "xt") as cf:
     token = inputr("what is your bot token?", True)
     invite_link = inputr("what is your bot invite link?")
+    source_link = inputr("what is the link to your repo?")
     online_annoucement_channel = inputr(
         "what is the ID of the channel for sending online announcements?"
     )
     cf.write(f"""token:string: {token};
 invite_link:string: {invite_link};
+source_link:string: {source_link};
 announce_channel:string: {online_annoucement_channel};
 online_messages:string:;""")
 

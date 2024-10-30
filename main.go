@@ -18,6 +18,7 @@ import (
 var (
 	botToken                      = ""
 	installLink                   = ""
+	sourceLink                    = ""
 	onlineAnnounceChannel         = ""
 	onlineAnnounceMessages        = []string{}
 	offeringCount          uint64 = 0
@@ -37,6 +38,10 @@ func sgInit() error {
 
 	if insLink, ok := conf["install_link"]; ok {
 		installLink = strings.TrimSpace(insLink.(string))
+	}
+
+	if sLink, ok := conf["source_link"]; ok {
+		sourceLink = strings.TrimSpace(sLink.(string))
 	}
 
 	if anncChan, ok := conf["announce_channel"]; ok {
