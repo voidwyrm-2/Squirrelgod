@@ -18,13 +18,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	} else if ContainsAnyOf(msgLow, "squirrel") &&
 		!strings.Contains(msgLow, "squirrelgod") {
-		sendReply(s, m, "https://tenor.com/view/squirrel-rotating-ring-gif-7442174")
+		sendReply(s, m.Reference(), "https://tenor.com/view/squirrel-rotating-ring-gif-7442174")
 		return
 	} else if strings.Contains(msgLow, "brazil") {
-		sendReply(s, m, "BRAZIL MENTION!!!!")
+		sendReply(s, m.Reference(), "BRAZIL MENTION!!!!")
 		return
 	} else if ContainsAnyOf(msgLow, "neuro-sama", "vedal") {
-		sendReply(s, m, "Someone tell Vedal there is a problem with my AI.")
+		sendReply(s, m.Reference(), "Someone tell Vedal there is a problem with my AI.")
 		return
 	}
 
@@ -36,9 +36,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func commandHandler(s *discordgo.Session, ref *discordgo.MessageReference, msgClean string) error {
-	comm := strings.ToLower(strings.TrimSpace(strings.Split(msgClean[1:], " ")[0]))
+	args := strings.Split(msgClean[1:], " ")
+	comm := strings.ToLower(strings.TrimSpace(args[0]))
+	args = args[1:]
 
-	fmt.Println("'" + comm + "'")
+	if comm == "help" {
+		return sqHelp(s, encapSendReply(s, ref), args)
+	}
+
+	if command, ok := commands[comm]; ok {
+		return command.run(s, encapSendReply(s, ref), args)
+	}
 
 	return nil
 }

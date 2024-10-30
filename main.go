@@ -3,8 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -12,7 +15,13 @@ import (
 	"github.com/voidwyrm-2/goconf"
 )
 
-var botToken = ""
+var (
+	botToken                      = ""
+	installLink                   = ""
+	onlineAnnounceChannel         = ""
+	onlineAnnounceMessages        = []string{}
+	offeringCount          uint64 = 0
+)
 
 func sgInit() error {
 	conf, err := goconf.Load("config.txt")
@@ -23,13 +32,39 @@ func sgInit() error {
 	if tok, ok := conf["token"]; !ok {
 		return errors.New("missing key 'token' in config")
 	} else {
-		botToken = tok.(string)
+		botToken = strings.TrimSpace(tok.(string))
+	}
+
+	if insLink, ok := conf["install_link"]; ok {
+		installLink = strings.TrimSpace(insLink.(string))
+	}
+
+	if anncChan, ok := conf["announce_channel"]; ok {
+		onlineAnnounceChannel = strings.TrimSpace(anncChan.(string))
+	}
+
+	if anncMsgs, ok := conf["online_messages"]; ok {
+		onlineAnnounceMessages = strings.Split(strings.TrimSpace(anncMsgs.(string)), "\n")
+	}
+
+	if ofco, err := readFile("offeringCount.txt"); err != nil {
+		return err
+	} else {
+		n, err := strconv.ParseUint(strings.TrimSpace(ofco), 10, 0)
+		if err != nil {
+			return err
+		}
+		offeringCount = n
+		fmt.Printf("loaded offeringCount as '%v'\n", offeringCount)
 	}
 
 	return nil
 }
 
 func sgExit() {
+	if err := writeFile("offeringCount.txt", fmt.Sprintf("%v", offeringCount)); err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func main() {
@@ -67,6 +102,19 @@ func main() {
 	}
 	atEnd := time.Now()
 	fmt.Printf("opened web socket in %s\n", atEnd.Sub(atStart).String())
+
+	fmt.Println("sending start-up message...")
+	if onlineAnnounceChannel != "" {
+		msg := onlineAnnounceMessages[rand.Intn(len(onlineAnnounceMessages))]
+		fmt.Println("message rolled, got `" + msg + "`")
+		_, err := dg.ChannelMessageSend(onlineAnnounceChannel, msg)
+		if err != nil {
+			fmt.Println("error while sending start-up message: " + err.Error())
+			return
+		}
+	} else {
+		fmt.Println("could not send start-up message, channel not given")
+	}
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("init finished!")
