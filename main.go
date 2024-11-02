@@ -25,6 +25,9 @@ var (
 )
 
 func sgInit() error {
+	fmt.Println("reading config and stat data...")
+	defer fmt.Println("finished reading config and stat data")
+
 	conf, err := goconf.Load("config.txt")
 	if err != nil {
 		return err
@@ -67,6 +70,8 @@ func sgInit() error {
 }
 
 func sgExit() {
+	fmt.Println("saving data...")
+	defer fmt.Println("data saved")
 	if err := writeFile("offeringCount.txt", fmt.Sprintf("%v", offeringCount)); err != nil {
 		fmt.Println(err.Error())
 	}
@@ -74,8 +79,7 @@ func sgExit() {
 
 func main() {
 	fmt.Println("===INIT===")
-	err := sgInit()
-	if err != nil {
+	if err := sgInit(); err != nil {
 		fmt.Println(err.Error())
 		return
 	}
@@ -89,13 +93,8 @@ func main() {
 		return
 	}
 
-	// register event handlers
-	fmt.Println("registering event handlers...")
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(messageReact)
-
 	fmt.Println("adding intents...")
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.Identify.Intents = (discordgo.IntentsGuildMessages | discordgo.IntentGuildMessageReactions)
 
 	// Open a websocket connection to Discord and begin listening.
 	fmt.Println("opening websocket...")
@@ -107,6 +106,13 @@ func main() {
 	}
 	atEnd := time.Now()
 	fmt.Printf("opened web socket in %s\n", atEnd.Sub(atStart).String())
+
+	// register event handlers
+	fmt.Println("registering event handlers...")
+	dg.AddHandler(messageCreate)
+	dg.AddHandler(messageReactAdd)
+	dg.AddHandler(messageReactRemove)
+	fmt.Println("event handlers registered")
 
 	fmt.Println("sending start-up message...")
 	if onlineAnnounceChannel != "" {
@@ -122,16 +128,18 @@ func main() {
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("init finished!")
+	fmt.Println("init finished")
 	fmt.Println("===END INIT===")
 
-	fmt.Println("signal loop:")
+	fmt.Println("==RUNTIME LOGS==")
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt) //, os.Kill)
 	<-sc
 
+	fmt.Println("==END RUNTIME LOGS==")
+
 	// Cleanly close down the Discord session.
-	fmt.Println()
 	fmt.Println("ending session...")
 	dg.Close()
 	fmt.Println("session ended")

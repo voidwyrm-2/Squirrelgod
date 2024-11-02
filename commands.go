@@ -40,4 +40,12 @@ var commands = map[string]sqCommand{
 		reply(strings.Join(args, " "))
 		return nil
 	}),
+	"offerings": newSQCommand("Replies with the amount of offerings given", func(s *discordgo.Session, reply func(msg string), _ []string) error {
+		if offeringCount == 69 || offeringCount == 42 {
+			reply(fmt.Sprintf("Offerings given so far: %v\n(nice)", offeringCount))
+		} else {
+			reply(fmt.Sprintf("Offerings given so far: %v", offeringCount))
+		}
+		return nil
+	}),
 }

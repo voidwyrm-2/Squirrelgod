@@ -28,6 +28,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	end, err := perceptionCheck(s, strings.TrimSpace(msgLow), m.Author.ID, m.Reference())
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	} else if end {
+		return
+	}
+
 	if !strings.HasPrefix(msgClean, "$") {
 		return
 	}
@@ -51,9 +59,70 @@ func commandHandler(s *discordgo.Session, ref *discordgo.MessageReference, msgCl
 	return nil
 }
 
-//func perceptionCheck(s *discordgo.Session, m *discordgo.Message) {
-//}
+var (
+	pCheck = false
+	p1     = ""
+)
 
-func messageReact(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	fmt.Println(m.Emoji.ID, m.UserID)
+func perceptionCheck(s *discordgo.Session, content, authID string, ref *discordgo.MessageReference) (bool, error) {
+	if content == "$pcheck" {
+		pCheck = true
+		return true, SendReplyErr(s, ref, `I feel it in my fingers, I feel it in my toes
+These people mean to harm us and they got to go
+So c'mon get 'em now
+You picked the wrong day to mess around with my tight crew, ooh, ooh
+There's no escaping it, I can perceive you
+Here's what we're gonna do
+Me and my boys are gonna mess you up`)
+	} else if content == "i rolled a one" {
+		if p1 != "" {
+			if p1 == authID {
+				return true, nil
+			}
+			p1 = ""
+			return true, SendReplyErr(s, ref, "CRAP\nMy boys are otherwise engaged\nSo I'm gonna bring it all myself- hey")
+		} else {
+			p1 = authID
+		}
+	}
+
+	return false, nil
+}
+
+func messageReactAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	if r.UserID == s.State.User.ID {
+		return
+	}
+	// fmt.Printf("given: '%s'(%v)\n", r.Emoji.Name, isValidOffering(r.Emoji.Name))
+
+	msg, err := s.ChannelMessage(r.ChannelID, r.MessageID)
+	if err != nil {
+		fmt.Println("error from messageReactAdd:", err.Error())
+		return
+	}
+
+	if isValidOffering(r.Emoji.Name) && msg.Author.ID == s.State.User.ID {
+		// fmt.Println("offering given")
+		offeringCount++
+	}
+}
+
+func messageReactRemove(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
+	if r.UserID == s.State.User.ID {
+		return
+	}
+	// fmt.Printf("removed: '%s'(%v)"\n, r.Emoji.Name, isValidOffering(r.Emoji.Name))
+
+	msg, err := s.ChannelMessage(r.ChannelID, r.MessageID)
+	if err != nil {
+		fmt.Println("error from messageReactRemove:", err.Error())
+		return
+	}
+
+	if isValidOffering(r.Emoji.Name) && msg.Author.ID == s.State.User.ID {
+		// fmt.Println("offering removed")
+		if offeringCount > 0 {
+			offeringCount--
+		}
+	}
 }

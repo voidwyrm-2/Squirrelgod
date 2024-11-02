@@ -70,3 +70,7 @@ func ContainsAnyOf(str string, substrs ...string) bool {
 	}
 	return ContainsAnyOf(str, (substrs[1:])...)
 }
+
+func isValidOffering(offering string) bool {
+	return offering == "🥜" || offering == "🌰"
+}
