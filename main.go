@@ -6,22 +6,27 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/bwmarrin/discordgo"
 	"github.com/voidwyrm-2/goconf"
 )
 
 var (
-	botToken                      = ""
-	installLink                   = ""
-	sourceLink                    = ""
-	onlineAnnounceChannel         = ""
-	onlineAnnounceMessages        = []string{}
-	offeringCount          uint64 = 0
+	botToken                            = ""
+	installLink                         = ""
+	sourceLink                          = ""
+	onlineAnnounceChannel               = ""
+	onlineAnnounceMessages              = []string{}
+	usedAnnounceMessage                 = ""
+	onlineAnnounceMessageOrigins        = map[string]string{}
+	channelsThatCanShowOrigins          = []string{}
+	offeringCount                uint64 = 0
 )
 
 func sgInit() error {
@@ -51,8 +56,47 @@ func sgInit() error {
 		onlineAnnounceChannel = strings.TrimSpace(anncChan.(string))
 	}
 
-	if anncMsgs, ok := conf["online_messages"]; ok {
-		onlineAnnounceMessages = strings.Split(strings.TrimSpace(anncMsgs.(string)), "\n")
+	if showOChan, ok := conf["channels_show_origins"]; ok {
+		channelsThatCanShowOrigins = strings.Split(strings.TrimSpace(showOChan.(string)), "\n")
+	}
+
+	/*
+		if anncMsgs, ok := conf["online_messages"]; ok {
+			getmo := func(msg string) (string, string) {
+				split := strings.Split(msg, "<origin>")
+				if len(split) == 1 {
+					split = append(split, "")
+				}
+				return strings.TrimSpace(split[0]), strings.TrimSpace(split[1])
+			}
+
+			for _, msg := range strings.Split(strings.TrimSpace(anncMsgs.(string)), "\n") {
+				m, o := getmo(msg)
+				onlineAnnounceMessages = append(onlineAnnounceMessages, o)
+				if o != "" {
+					onlineAnnounceMessageOrigins[m] = o
+				}
+			}
+		}
+	*/
+
+	var announceMsgInfo struct {
+		Messages [][]string
+	}
+
+	if content, err := readFile("announce_msgs.toml"); err != nil {
+		return err
+	} else if _, err = toml.Decode(content, &announceMsgInfo); err != nil {
+		return err
+	}
+
+	for _, m := range announceMsgInfo.Messages {
+		onlineAnnounceMessages = append(onlineAnnounceMessages, m[0])
+		if len(m) > 1 {
+			if m[1] != "" {
+				onlineAnnounceMessageOrigins[m[0]] = m[1]
+			}
+		}
 	}
 
 	if ofco, err := readFile("offeringCount.txt"); err != nil {
@@ -64,6 +108,10 @@ func sgInit() error {
 		}
 		offeringCount = n
 		fmt.Printf("loaded offeringCount as '%v'\n", offeringCount)
+	}
+
+	if len(onlineAnnounceMessages) == 0 {
+		onlineAnnounceMessages = append(onlineAnnounceMessages, "[PLACEHOLDER]")
 	}
 
 	return nil
@@ -114,17 +162,22 @@ func main() {
 	dg.AddHandler(messageReactRemove)
 	fmt.Println("event handlers registered")
 
-	fmt.Println("sending start-up message...")
-	if onlineAnnounceChannel != "" {
-		msg := onlineAnnounceMessages[rand.Intn(len(onlineAnnounceMessages))]
-		fmt.Println("message rolled, got `" + msg + "`")
-		_, err := dg.ChannelMessageSend(onlineAnnounceChannel, msg)
-		if err != nil {
-			fmt.Println("error while sending start-up message: " + err.Error())
-			return
-		}
+	if slices.Contains(os.Args, "nm") {
+		fmt.Println("start-up message ignored because of a passed flag")
 	} else {
-		fmt.Println("could not send start-up message, channel not given")
+		fmt.Println("sending start-up message...")
+		if onlineAnnounceChannel != "" {
+			msg := onlineAnnounceMessages[rand.Intn(len(onlineAnnounceMessages))]
+			usedAnnounceMessage = msg
+			fmt.Println("message rolled, got `" + usedAnnounceMessage + "`")
+			_, err := dg.ChannelMessageSend(onlineAnnounceChannel, msg)
+			if err != nil {
+				fmt.Println("error while sending start-up message: " + err.Error())
+				return
+			}
+		} else {
+			fmt.Println("could not send start-up message, channel not given")
+		}
 	}
 
 	// Wait here until CTRL-C or other term signal is received.

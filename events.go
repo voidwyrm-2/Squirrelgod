@@ -40,7 +40,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	commandHandler(s, m.Reference(), msgClean)
+	if err := commandHandler(s, m.Reference(), msgClean); err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func commandHandler(s *discordgo.Session, ref *discordgo.MessageReference, msgClean string) error {
@@ -53,7 +55,11 @@ func commandHandler(s *discordgo.Session, ref *discordgo.MessageReference, msgCl
 	}
 
 	if command, ok := commands[comm]; ok {
-		return command.run(s, encapSendReply(s, ref), args)
+		ch, err := s.Channel(ref.ChannelID)
+		if err != nil {
+			return err
+		}
+		return command.run(s, ch, encapSendReply(s, ref), args)
 	}
 
 	return nil

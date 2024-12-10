@@ -15,6 +15,7 @@ def inputr(msg: str, nonempty: bool = False) -> str:
 print("creating required files...")
 
 config = Path("config.txt")
+announce_messages = Path("announce_msgs.toml")
 offerings = Path("offeringCount.txt")
 
 print(f"creating '{config}'...")
@@ -29,8 +30,7 @@ with open(config, "wt" if config.exists() else "xt") as cf:
     cf.write(f"""token:string: {token};
 invite_link:string: {invite_link};
 source_link:string: {source_link};
-announce_channel:string: {online_annoucement_channel};
-online_messages:string:;""")
+announce_channel:string: {online_annoucement_channel};""")
 
 print(f"created '{config}'")
 
@@ -46,5 +46,8 @@ if offerings.exists():
 else:
     with open(offerings, "wt") as of:
         of.write("0")
+
+with open(announce_messages, "wt") as am:
+    am.write("messages = []")
 
 print(f"created '{offerings}'")

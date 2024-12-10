@@ -5,6 +5,7 @@ go 1.22.5
 require github.com/bwmarrin/discordgo v0.28.1
 
 require (
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/voidwyrm-2/goconf v0.0.0-20241028000928-830b51def0fb // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
