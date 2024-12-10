@@ -55,7 +55,7 @@ var commands = map[string]sqCommand{
 	}),
 	"origin": newSQCommand("Shows the origin of the messages that Squirrelgod said when he came online; only works in specific circumstances", func(s *discordgo.Session, ch *discordgo.Channel, reply func(msg string), _ []string) error {
 		if slices.Contains(channelsThatCanShowOrigins, ch.ID) {
-			return
+			return nil
 		}
 
 		if origin, ok := onlineAnnounceMessageOrigins[usedAnnounceMessage]; ok {
